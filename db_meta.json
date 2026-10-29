@@ -11,10 +11,6 @@
         {
             "name": "age",
             "type": "int"
-        },
-        {
-            "name": "is_active",
-            "type": "bool"
         }
     ]
 }

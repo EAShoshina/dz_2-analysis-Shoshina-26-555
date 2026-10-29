@@ -1,8 +1,12 @@
 from prettytable import PrettyTable
 
+from primitive_db.decorators import confirm_action, handle_db_errors, log_time
+from primitive_db.utils import load_table_data, save_table_data
+
 VALID_TYPES = {"int", "str", "bool"}
 
 
+@handle_db_errors
 def create_table(metadata: dict, table_name: str, columns: list) -> dict:
     """Создаёт таблицу, добавляет ID:int и возвращает обновлённые метаданные."""
     if table_name in metadata:
@@ -33,6 +37,8 @@ def create_table(metadata: dict, table_name: str, columns: list) -> dict:
     return new_metadata
 
 
+@confirm_action("удаление таблицы")
+@handle_db_errors
 def drop_table(metadata: dict, table_name: str) -> dict:
     """Удаляет таблицу из метаданных."""
     if table_name not in metadata:
@@ -45,6 +51,7 @@ def drop_table(metadata: dict, table_name: str) -> dict:
     return new_metadata
 
 
+@handle_db_errors
 def list_tables(metadata: dict) -> None:
     """Печатает список всех таблиц."""
     if not metadata:
@@ -53,6 +60,9 @@ def list_tables(metadata: dict) -> None:
     for name in metadata:
         print(f"- {name}")
 
+
+@log_time
+@handle_db_errors
 def insert(metadata: dict, table_name: str, values: list) -> list:
     """Добавляет запись в таблицу."""
     if table_name not in metadata:
@@ -68,7 +78,7 @@ def insert(metadata: dict, table_name: str, values: list) -> list:
         return []
 
     # Валидация типов
-    for i, (val, col) in enumerate(zip(values, expected_cols)):
+    for val, col in zip(values, expected_cols):
         col_type = col["type"]
         if col_type == "int" and not isinstance(val, int):
             print(f"Ошибка: значение для '{col['name']}' должно быть int.")
@@ -78,8 +88,6 @@ def insert(metadata: dict, table_name: str, values: list) -> list:
             return []
 
     # Генерация ID и создание записи
-    from primitive_db.utils import load_table_data, save_table_data
-
     table_data = load_table_data(table_name)
     new_id = max([row["ID"] for row in table_data], default=0) + 1
 
@@ -94,6 +102,8 @@ def insert(metadata: dict, table_name: str, values: list) -> list:
     return table_data
 
 
+@log_time
+@handle_db_errors
 def select(table_data: list, where_clause: dict = None) -> list:
     """Возвращает отфильтрованные записи."""
     if not where_clause:
@@ -111,6 +121,7 @@ def select(table_data: list, where_clause: dict = None) -> list:
     return result
 
 
+@handle_db_errors
 def update(table_data: list, set_clause: dict, where_clause: dict) -> list:
     """Обновляет записи, подходящие под where_clause."""
     for row in table_data:
@@ -126,6 +137,8 @@ def update(table_data: list, set_clause: dict, where_clause: dict) -> list:
     return table_data
 
 
+@confirm_action("удаление записей")
+@handle_db_errors
 def delete(table_data: list, where_clause: dict) -> list:
     """Удаляет записи, подходящие под where_clause."""
     return [
@@ -135,6 +148,7 @@ def delete(table_data: list, where_clause: dict) -> list:
     ]
 
 
+@handle_db_errors
 def print_table(table_data: list, table_name: str) -> None:
     """Выводит данные в красивом формате с помощью PrettyTable."""
     if not table_data:
@@ -148,13 +162,12 @@ def print_table(table_data: list, table_name: str) -> None:
     print(pt)
 
 
+@handle_db_errors
 def table_info(metadata: dict, table_name: str) -> None:
     """Выводит информацию о таблице."""
     if table_name not in metadata:
         print(f'Ошибка: Таблица "{table_name}" не существует.')
         return
-
-    from primitive_db.utils import load_table_data
 
     schema = metadata[table_name]
     cols_str = ", ".join(f"{c['name']}:{c['type']}" for c in schema)

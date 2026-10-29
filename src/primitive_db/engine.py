@@ -3,6 +3,7 @@ import shlex
 import prompt
 
 from primitive_db import core
+from primitive_db.decorators import create_cacher
 from primitive_db.parser import parse_set, parse_value, parse_where
 from primitive_db.utils import (
     load_metadata,
@@ -12,6 +13,17 @@ from primitive_db.utils import (
 )
 
 META_FILE = "db_meta.json"
+cache_result = create_cacher()
+
+
+def clear_cache_for_table(table_name: str) -> None:
+    """Очищает кэш для конкретной таблицы (если мы её изменили)."""
+    # Ключи кэша имеют вид "users_{'age': 28}" или "users_{}".
+    # Мы не можем напрямую удалить из замыкания, но можем передать пустой
+    # словарь в кэш, чтобы инвалидировать старые данные.
+    # Более простой и надёжный способ — пересоздать кэш.
+    global cache_result
+    cache_result = create_cacher()
 
 
 def print_help() -> None:
@@ -72,7 +84,9 @@ def run() -> None:
                 print("Ошибка: укажите имя таблицы.")
                 continue
             updated = core.drop_table(metadata, cmd_args[0])
-            save_metadata(META_FILE, updated)
+            if updated is not None:
+                save_metadata(META_FILE, updated)
+                clear_cache_for_table(cmd_args[0])
         # --- CRUD ---
         elif command == "info":
             if len(args) != 2:
@@ -91,16 +105,24 @@ def run() -> None:
             raw_values = " ".join(args[4:]).strip("()")
             values = [parse_value(v) for v in raw_values.split(",")]
             core.insert(metadata, table_name, values)
+            clear_cache_for_table(table_name)
         elif command == "select":
             if len(args) < 3 or args[1].lower() != "from":
                 print("Ошибка синтаксиса select.")
                 continue
             table_name = args[2]
-            data = load_table_data(table_name)
             where = {}
             if len(args) > 3 and args[3].lower() == "where":
                 where = parse_where(" ".join(args[4:]))
-            result = core.select(data, where)
+
+            # Ключ кэша — это уникальное сочетание таблицы и условия
+            cache_key = f"{table_name}_{where}"
+
+            def fetch_data():
+                data = load_table_data(table_name)
+                return core.select(data, where)
+
+            result = cache_result(cache_key, fetch_data)
             core.print_table(result, table_name)
         elif command == "update":
             if len(args) < 6 or args[2].lower() != "set" or "where" not in args:
@@ -114,6 +136,7 @@ def run() -> None:
             data = load_table_data(table_name)
             updated_data = core.update(data, set_clause, where_clause)
             save_table_data(table_name, updated_data)
+            clear_cache_for_table(table_name)
             print(f'Записи в таблице "{table_name}" обновлены.')
         elif command == "delete":
             if (
@@ -128,7 +151,7 @@ def run() -> None:
 
             data = load_table_data(table_name)
             updated_data = core.delete(data, where_clause)
-            save_table_data(table_name, updated_data)
-            print(f'Записи из таблицы "{table_name}" удалены.')
-        else:
-            print(f"Функции {command} нет. Попробуйте снова.")
+            if updated_data is not None:
+                save_table_data(table_name, updated_data)
+                clear_cache_for_table(table_name)
+                print(f'Записи из таблицы "{table_name}" удалены.')
