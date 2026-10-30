@@ -1,7 +1,7 @@
 # Primitive DB
 Примитивная база данных
 
-[Ссылка на скринкаст на google drive (аналог аскинемы)](https://drive.google.com/file/d/14hu1U0vQ1cfMx0gCZw6zvpQzSUwQhMsp/view?usp=sharing) + demo.cast в корне проекта
+[Ссылка на скринкаст на google drive (аналог аскинемы)](https://drive.google.com/file/d/14hu1U0vQ1cfMx0gCZw6zvpQzSUwQhMsp/view?usp=sharing)
 
 ## Установка и запуск
 
