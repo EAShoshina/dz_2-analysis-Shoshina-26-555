@@ -3,6 +3,7 @@ import shlex
 import prompt
 
 from primitive_db import core
+from primitive_db.constants import META_FILE
 from primitive_db.decorators import create_cacher
 from primitive_db.parser import parse_set, parse_value, parse_where
 from primitive_db.utils import (
@@ -12,16 +13,13 @@ from primitive_db.utils import (
     save_table_data,
 )
 
-META_FILE = "db_meta.json"
 cache_result = create_cacher()
 
 
 def clear_cache_for_table(table_name: str) -> None:
     """Очищает кэш для конкретной таблицы (если мы её изменили)."""
     # Ключи кэша имеют вид "users_{'age': 28}" или "users_{}".
-    # Мы не можем напрямую удалить из замыкания, но можем передать пустой
-    # словарь в кэш, чтобы инвалидировать старые данные.
-    # Более простой и надёжный способ — пересоздать кэш.
+    # Мы не можем напрямую удалить из замыкания, но можем пересоздать кэш.
     global cache_result
     cache_result = create_cacher()
 
@@ -118,9 +116,9 @@ def run() -> None:
             # Ключ кэша — это уникальное сочетание таблицы и условия
             cache_key = f"{table_name}_{where}"
 
-            def fetch_data():
-                data = load_table_data(table_name)
-                return core.select(data, where)
+            def fetch_data(t_name: str = table_name, w_clause: dict = where):
+                data = load_table_data(t_name)
+                return core.select(data, w_clause)
 
             result = cache_result(cache_key, fetch_data)
             core.print_table(result, table_name)
