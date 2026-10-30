@@ -1,6 +1,8 @@
 # Primitive DB
 Примитивная база данных
 
+[Ссылка на скринкаст на google drive (аналог аскинемы)](https://drive.google.com/file/d/14hu1U0vQ1cfMx0gCZw6zvpQzSUwQhMsp/view?usp=sharing)
+
 ## Установка и запуск
 
 ```bash
@@ -14,10 +16,6 @@ uv tool install dist/primitive_db-0.1.0-py3-none-any.whl
 database
 ```
 
-## Ссылка на скринкаст на google drive (аналог аскинемы): 
-```
-https://drive.google.com/file/d/14hu1U0vQ1cfMx0gCZw6zvpQzSUwQhMsp/view?usp=sharing
-```
 ## 1 этап: Инициализация пакета
 Проект настроен как устанавливаемый пакет (wheel) с точкой входа `database`. Использует `uv` для управления зависимостями и окружением.
 
@@ -47,3 +45,25 @@ https://drive.google.com/file/d/14hu1U0vQ1cfMx0gCZw6zvpQzSUwQhMsp/view?usp=shari
 *   **`log_time`** — замер времени выполнения `insert` и `select`.
 *   **`create_cacher`** — замыкание для кэширования `select`. Повторные запросы с теми же условиями возвращаются мгновенно. Кэш сбрасывается при изменении данных.
 
+## Этап 5: Тестирование и завершение
+
+Проект подготовлен к автоматической проверке:
+
+*   Код проходит проверку линтером **`ruff`** без ошибок.
+*   Используются только разрешенные стандартные (`json`, `shlex`, `time`, `os`) и внешние (`prettytable`, `prompt`) библиотеки.
+*   Константы вынесены в **`constants.py`**.
+*   Классы не используются, вся логика построена на функциях.
+
+## Структура проекта
+
+```text
+src/primitive_db/
+├── __init__.py      # Маркер пакета
+├── main.py          # Точка входа в приложение
+├── engine.py        # Основной цикл, парсинг ввода и кэширование
+├── core.py          # Бизнес-логика (создание таблиц, CRUD)
+├── parser.py        # Разбор условий where и set
+├── utils.py         # Работа с файловой системой (JSON)
+├── decorators.py    # Декораторы и замыкание
+└── constants.py     # Константы проекта (META_FILE, VALID_TYPES)
+```
