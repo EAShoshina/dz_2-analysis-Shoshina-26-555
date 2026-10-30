@@ -3,3 +3,6 @@ dist/
 __pycache__/
 *.egg-info
 .ruff_cache/
+data/
+db_meta.json
+*.cast
